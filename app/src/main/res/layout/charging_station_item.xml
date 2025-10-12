@@ -7,57 +7,37 @@
     app:cardCornerRadius="8dp"
     app:cardElevation="4dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:padding="16dp">
-
-        <ImageView
-            android:id="@+id/stationImageView"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:scaleType="centerCrop"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
 
         <TextView
             android:id="@+id/stationNameTextView"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:textAppearance="@style/TextAppearance.AppCompat.Large"
-            app:layout_constraintStart_toEndOf="@+id/stationImageView"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" />
+            android:text="Station Name"
+            android:textAppearance="@style/TextAppearance.AppCompat.Large" />
 
         <TextView
             android:id="@+id/locationTextView"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:layout_constraintStart_toStartOf="@+id/stationNameTextView"
-            app:layout_constraintTop_toBottomOf="@+id/stationNameTextView"
-            app:layout_constraintEnd_toEndOf="parent" />
+            android:text="Location" />
 
         <TextView
             android:id="@+id/evTypeTextView"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:layout_constraintStart_toStartOf="@+id/stationNameTextView"
-            app:layout_constraintTop_toBottomOf="@+id/locationTextView"
-            app:layout_constraintEnd_toEndOf="parent" />
+            android:text="Type" />
 
         <TextView
             android:id="@+id/availableSlotsTextView"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:layout_constraintStart_toStartOf="@+id/stationNameTextView"
-            app:layout_constraintTop_toBottomOf="@+id/evTypeTextView"
-            app:layout_constraintEnd_toEndOf="parent" />
+            android:text="Available Slots: 0" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
 </androidx.cardview.widget.CardView>

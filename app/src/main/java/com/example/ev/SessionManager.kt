@@ -3,36 +3,51 @@ package com.example.ev
 import android.content.Context
 import android.content.SharedPreferences
 
-class SessionManager(context: Context) {
-    private val prefs: SharedPreferences = context.getSharedPreferences("AuthPrefs", Context.MODE_PRIVATE)
+/**
+ * A singleton object to manage the user's session data using SharedPreferences.
+ */
+object SessionManager {
+    private var prefs: SharedPreferences? = null
 
-    companion object {
-        const val AUTH_TOKEN = "auth_token"
-        const val USER_EMAIL = "user_email"
+    private const val AUTH_TOKEN = "auth_token"
+    private const val USER_ID = "user_id"
+    private const val USER_ROLE = "user_role"
+
+    /**
+     * Initializes the SessionManager. Must be called once, in the Application class.
+     */
+    fun initialize(context: Context) {
+        if (prefs == null) {
+            prefs = context.applicationContext.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
+        }
     }
 
-    fun saveAuthToken(token: String) {
-        val editor = prefs.edit()
-        editor.putString(AUTH_TOKEN, "Bearer $token")
+    private fun requirePrefs(): SharedPreferences {
+        return prefs ?: throw IllegalStateException("SessionManager must be initialized. Call initialize() in your Application class.")
+    }
+
+    fun saveSession(token: String, userId: String, role: String) {
+        val editor = requirePrefs().edit()
+        editor.putString(AUTH_TOKEN, token)
+        editor.putString(USER_ID, userId)
+        editor.putString(USER_ROLE, role)
         editor.apply()
     }
 
     fun getAuthToken(): String? {
-        return prefs.getString(AUTH_TOKEN, null)
+        return requirePrefs().getString(AUTH_TOKEN, null)
     }
 
-    fun saveUserEmail(email: String) {
-        val editor = prefs.edit()
-        editor.putString(USER_EMAIL, email)
-        editor.apply()
+    fun getUserId(): String? {
+        return requirePrefs().getString(USER_ID, null)
     }
 
-    fun getUserEmail(): String? {
-        return prefs.getString(USER_EMAIL, null)
+    fun getUserRole(): String? {
+        return requirePrefs().getString(USER_ROLE, null)
     }
 
-    fun clear() {
-        val editor = prefs.edit()
+    fun clearSession() {
+        val editor = requirePrefs().edit()
         editor.clear()
         editor.apply()
     }

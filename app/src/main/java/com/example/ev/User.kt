@@ -1,12 +1,17 @@
 package com.example.ev
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "users")
 data class User(
-    val id: Int = 0,
-    val firstName: String,
-    val lastName: String,
-    val email: String,
-    val phone: String,
-    val password: String,
-    val nic: String,
-    val role: String
+    @PrimaryKey
+    val id: String,
+    val username: String?,
+    val fullName: String?,
+    val nic: String?,
+    val email: String?,
+    val role: String?,
+    val isActive: Boolean?,
+    val createdAt: String?
 )

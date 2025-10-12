@@ -7,50 +7,79 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.io.IOException
 
 class Signin : AppCompatActivity() {
 
-    private lateinit var emailEditText: EditText
+    private lateinit var usernameEditText: EditText
     private lateinit var passwordEditText: EditText
     private lateinit var loginButton: Button
     private lateinit var forgotPasswordTextView: TextView
     private lateinit var createAccountTextView: TextView
-    private lateinit var sessionManager: SessionManager
-    private lateinit var dbHelper: DatabaseHelper
+    private lateinit var userRepository: UserRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Auto-login if session exists
+        if (SessionManager.getAuthToken() != null) {
+            val intent = Intent(this, MainActivity::class.java)
+            startActivity(intent)
+            finish()
+            return
+        }
+
         setContentView(R.layout.activity_signin)
 
-        sessionManager = SessionManager(this)
-        dbHelper = DatabaseHelper(this)
-
-        emailEditText = findViewById(R.id.emailEditText)
+        userRepository = UserRepository(this)
+        usernameEditText = findViewById(R.id.usernameEditText)
         passwordEditText = findViewById(R.id.passwordEditText)
         loginButton = findViewById(R.id.signInButton)
         forgotPasswordTextView = findViewById(R.id.forgotPasswordTextView)
         createAccountTextView = findViewById(R.id.signUpTextView)
 
         loginButton.setOnClickListener {
-            val email = emailEditText.text.toString()
+            val username = usernameEditText.text.toString()
             val password = passwordEditText.text.toString()
 
-            if (email.isNotEmpty() && password.isNotEmpty()) {
-                val user = dbHelper.getUser(email)
-                if (user != null && user.password == password) {
-                    // Save user email to session
-                    sessionManager.saveUserEmail(email)
-                    // For now, we are not using the API token for login
-                    // If your booking API still needs a token, we must generate one or change the API.
-                    // For now, let's assume booking will work without a token.
+            if (username.isNotEmpty() && password.isNotEmpty()) {
+                val authRequest = AuthRequest(username, password)
+                ApiClient.api.authenticate(authRequest).enqueue(object : Callback<LoginApiResponse> {
+                    override fun onResponse(call: Call<LoginApiResponse>, response: Response<LoginApiResponse>) {
+                        if (response.isSuccessful) {
+                            val loginResponse = response.body()
+                            val authResponse = loginResponse?.data
 
-                    Toast.makeText(this, "Sign in successful", Toast.LENGTH_SHORT).show()
-                    val intent = Intent(this, MainActivity::class.java)
-                    startActivity(intent)
-                    finish()
-                } else {
-                    Toast.makeText(this, "Invalid email or password", Toast.LENGTH_SHORT).show()
-                }
+                            if (loginResponse?.success == true && authResponse?.token != null && authResponse.userId != null && authResponse.role != null) {
+                                SessionManager.saveSession(authResponse.token, authResponse.userId, authResponse.role)
+                                lifecycleScope.launch {
+                                    userRepository.refreshUser(authResponse.userId)
+                                }
+                                Toast.makeText(this@Signin, "Login successful", Toast.LENGTH_SHORT).show()
+                                val intent = Intent(this@Signin, MainActivity::class.java)
+                                startActivity(intent)
+                                finish()
+                            } else {
+                                Toast.makeText(this@Signin, "Invalid response from server", Toast.LENGTH_SHORT).show()
+                            }
+                        } else {
+                            Toast.makeText(this@Signin, "Invalid username or password", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
+                    override fun onFailure(call: Call<LoginApiResponse>, t: Throwable) {
+                        if (t is IOException) {
+                            Toast.makeText(this@Signin, "Could not connect to server. Please check your network connection.", Toast.LENGTH_LONG).show()
+                        } else {
+                            Toast.makeText(this@Signin, "Login failed: ${t.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                })
             } else {
                 Toast.makeText(this, "Please fill in all fields", Toast.LENGTH_SHORT).show()
             }
@@ -62,7 +91,6 @@ class Signin : AppCompatActivity() {
         }
 
         forgotPasswordTextView.setOnClickListener {
-            // TODO: Navigate to Forgot Password screen
             Toast.makeText(this, "Navigate to Forgot Password", Toast.LENGTH_SHORT).show()
         }
     }
