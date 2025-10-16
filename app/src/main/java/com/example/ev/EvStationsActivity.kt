@@ -18,10 +18,12 @@ class EvStationsActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_ev_stations)
 
-        stationRecyclerView = findViewById(R.id.stationRecyclerView)
+        stationRecyclerView = findViewById(R.id.chargingStationRecyclerView)
         stationRecyclerView.layoutManager = LinearLayoutManager(this)
 
-        stationAdapter = ChargingStationAdapter(emptyList()) { station ->
+        // Correctly instantiate the adapter and set the listener
+        stationAdapter = ChargingStationAdapter(emptyList())
+        stationAdapter.onBookNowClicked = { station ->
             val intent = Intent(this, BookingActivity::class.java)
             intent.putExtra("STATION_ID", station.id)
             startActivity(intent)

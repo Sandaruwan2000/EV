@@ -2,134 +2,116 @@ package com.example.ev
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
 import android.view.MenuItem
-import android.view.View
+import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import androidx.appcompat.app.ActionBarDrawerToggle
+import androidx.appcompat.widget.Toolbar
+import androidx.drawerlayout.widget.DrawerLayout
+import com.google.android.material.navigation.NavigationView
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class MainActivity : BaseActivity() {
+class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedListener {
 
-    private lateinit var stationRecyclerView: RecyclerView
-    private lateinit var stationAdapter: ChargingStationAdapter
-    private lateinit var placeholderTextView: TextView
+    private lateinit var drawerLayout: DrawerLayout
+    private lateinit var pendingBookingsCountTextView: TextView
+    private lateinit var confirmedBookingsCountTextView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Restore the role-based check
+        val userRole = SessionManager.getUserRole()
+        if (userRole == "Backoffice") {
+            startActivity(Intent(this, BookingConfirmationActivity::class.java))
+            finish()
+            return // Important to prevent the rest of the EVOwner UI from loading
+        }
+
         setContentView(R.layout.activity_main)
 
-        stationRecyclerView = findViewById(R.id.stationRecyclerView)
-        placeholderTextView = findViewById(R.id.placeholderTextView)
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
 
-        val bottomNavigationView = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        drawerLayout = findViewById(R.id.drawer_layout)
+        val navView: NavigationView = findViewById(R.id.nav_view)
+        navView.setNavigationItemSelectedListener(this)
 
-        val userRole = SessionManager.getUserRole()
-        if (userRole == "EVOwner") {
-            setupEVOwnerUI(bottomNavigationView)
-        } else {
-            setupNonEVOwnerUI(userRole, bottomNavigationView)
-        }
-    }
+        val toggle = ActionBarDrawerToggle(
+            this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close
+        )
+        drawerLayout.addDrawerListener(toggle)
+        toggle.syncState()
 
-    private fun setupEVOwnerUI(navView: BottomNavigationView) {
-        stationRecyclerView.visibility = View.VISIBLE
-        placeholderTextView.visibility = View.GONE
+        pendingBookingsCountTextView = findViewById(R.id.pendingBookingsCountTextView)
+        confirmedBookingsCountTextView = findViewById(R.id.confirmedBookingsCountTextView)
 
-        stationRecyclerView.layoutManager = LinearLayoutManager(this)
-        stationAdapter = ChargingStationAdapter(emptyList()) { station ->
-            val intent = Intent(this, BookingActivity::class.java)
-            intent.putExtra("STATION_ID", station.id) // Revert to passing only the ID
+        findViewById<Button>(R.id.viewStationsButton).setOnClickListener {
+            val intent = Intent(this, EvStationsActivity::class.java)
             startActivity(intent)
         }
-        stationRecyclerView.adapter = stationAdapter
-        fetchChargingStations()
 
-        navView.setOnItemSelectedListener {
-            when (it.itemId) {
-                R.id.navigation_home -> {
-                    fetchChargingStations()
-                    true
-                }
-                R.id.navigation_my_bookings -> {
-                    val intent = Intent(this, MyBookingsActivity::class.java)
-                    startActivity(intent)
-                    true
-                }
-                R.id.navigation_profile -> {
-                    val intent = Intent(this, ProfileActivity::class.java)
-                    startActivity(intent)
-                    true
-                }
-                else -> false
-            }
+        findViewById<Button>(R.id.myBookingsButton).setOnClickListener {
+            val intent = Intent(this, MyBookingsActivity::class.java)
+            startActivity(intent)
         }
     }
 
-    private fun setupNonEVOwnerUI(role: String?, navView: BottomNavigationView) {
-        stationRecyclerView.visibility = View.GONE
-        placeholderTextView.visibility = View.VISIBLE
-        placeholderTextView.text = "Welcome, $role! Your dashboard is under construction."
-
-        navView.menu.findItem(R.id.navigation_my_bookings).isVisible = false
-
-        navView.setOnItemSelectedListener {
-            when (it.itemId) {
-                R.id.navigation_home -> true
-                R.id.navigation_profile -> {
-                    val intent = Intent(this, ProfileActivity::class.java)
-                    startActivity(intent)
-                    true
-                }
-                else -> false
-            }
+    override fun onResume() {
+        super.onResume()
+        // Only fetch bookings if this is not a Backoffice user
+        if (SessionManager.getUserRole() != "Backoffice") {
+            fetchUserBookings()
         }
     }
 
-    private fun fetchChargingStations() {
-        ApiClient.authenticatedApi.getChargingStations().enqueue(object : Callback<List<ChargingStation>> {
-            override fun onResponse(call: Call<List<ChargingStation>>, response: Response<List<ChargingStation>>) {
+    private fun fetchUserBookings() {
+        val userId = SessionManager.getUserId() ?: return
+
+        // Use the authenticated API client to include the auth token
+        ApiClient.authenticatedApi.getUserBookings(userId).enqueue(object : Callback<List<BookingDetails>> {
+            override fun onResponse(call: Call<List<BookingDetails>>, response: Response<List<BookingDetails>>) {
                 if (response.isSuccessful) {
-                    val activeStations = response.body()?.filter { it.isActive } ?: emptyList()
-                    stationAdapter.updateStations(activeStations)
+                    response.body()?.let {
+                        val pendingCount = it.count { it.status.equals("Pending", ignoreCase = true) }
+                        val confirmedCount = it.count { it.status.equals("Confirmed", ignoreCase = true) }
+                        pendingBookingsCountTextView.text = pendingCount.toString()
+                        confirmedBookingsCountTextView.text = confirmedCount.toString()
+                    }
                 } else {
-                    Toast.makeText(this@MainActivity, "Failed to fetch stations", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "Failed to fetch bookings", Toast.LENGTH_SHORT).show()
                 }
             }
 
-            override fun onFailure(call: Call<List<ChargingStation>>, t: Throwable) {
+            override fun onFailure(call: Call<List<BookingDetails>>, t: Throwable) {
                 Toast.makeText(this@MainActivity, "An error occurred: ${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.main_menu, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_profile -> {
-                val intent = Intent(this, ProfileActivity::class.java)
-                startActivity(intent)
-                true
-            }
-            R.id.action_logout -> {
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        val intent = when (item.itemId) {
+            R.id.nav_home -> Intent(this, MainActivity::class.java)
+            R.id.nav_profile -> Intent(this, ProfileActivity::class.java)
+            R.id.nav_my_bookings -> Intent(this, MyBookingsActivity::class.java)
+            R.id.nav_logout -> {
                 SessionManager.clearSession()
-                Toast.makeText(this, "You have been logged out.", Toast.LENGTH_SHORT).show()
-                val intent = Intent(this, Signin::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
-                true
+                Intent(this, Signin::class.java)
             }
-            else -> super.onOptionsItemSelected(item)
+            else -> null
         }
+
+        if (intent != null) {
+            startActivity(intent)
+            if (item.itemId == R.id.nav_logout) {
+                finish()
+            }
+        }
+
+        drawerLayout.closeDrawers()
+        return true
     }
 }

@@ -7,6 +7,8 @@ data class ChargingStation(
     val id: String,
     val name: String,
     val location: String,
+    val latitude: Double,
+    val longitude: Double,
     val type: String,
     val availableSlots: Int,
     val isActive: Boolean,

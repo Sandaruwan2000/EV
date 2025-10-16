@@ -53,12 +53,11 @@ class Signin : AppCompatActivity() {
                     override fun onResponse(call: Call<LoginApiResponse>, response: Response<LoginApiResponse>) {
                         if (response.isSuccessful) {
                             val loginResponse = response.body()
-                            val authResponse = loginResponse?.data
 
-                            if (loginResponse?.success == true && authResponse?.token != null && authResponse.userId != null && authResponse.role != null) {
-                                SessionManager.saveSession(authResponse.token, authResponse.userId, authResponse.role)
+                            if (loginResponse?.token != null && loginResponse.userId != null && loginResponse.role != null) {
+                                SessionManager.saveSession(loginResponse.token, loginResponse.userId, loginResponse.role)
                                 lifecycleScope.launch {
-                                    userRepository.refreshUser(authResponse.userId)
+                                    userRepository.refreshUser(loginResponse.userId)
                                 }
                                 Toast.makeText(this@Signin, "Login successful", Toast.LENGTH_SHORT).show()
                                 val intent = Intent(this@Signin, MainActivity::class.java)

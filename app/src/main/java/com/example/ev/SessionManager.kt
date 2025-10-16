@@ -3,19 +3,15 @@ package com.example.ev
 import android.content.Context
 import android.content.SharedPreferences
 
-/**
- * A singleton object to manage the user's session data using SharedPreferences.
- */
 object SessionManager {
     private var prefs: SharedPreferences? = null
 
     private const val AUTH_TOKEN = "auth_token"
     private const val USER_ID = "user_id"
     private const val USER_ROLE = "user_role"
+    private const val SELECTED_STATION_ID = "selected_station_id"
+    private const val SELECTED_STATION_NAME = "selected_station_name"
 
-    /**
-     * Initializes the SessionManager. Must be called once, in the Application class.
-     */
     fun initialize(context: Context) {
         if (prefs == null) {
             prefs = context.applicationContext.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
@@ -23,7 +19,7 @@ object SessionManager {
     }
 
     private fun requirePrefs(): SharedPreferences {
-        return prefs ?: throw IllegalStateException("SessionManager must be initialized. Call initialize() in your Application class.")
+        return prefs ?: throw IllegalStateException("SessionManager must be initialized.")
     }
 
     fun saveSession(token: String, userId: String, role: String) {
@@ -34,21 +30,31 @@ object SessionManager {
         editor.apply()
     }
 
-    fun getAuthToken(): String? {
-        return requirePrefs().getString(AUTH_TOKEN, null)
+    fun saveStationSelection(stationId: String, stationName: String) {
+        val editor = requirePrefs().edit()
+        editor.putString(SELECTED_STATION_ID, stationId)
+        editor.putString(SELECTED_STATION_NAME, stationName)
+        editor.apply()
     }
 
-    fun getUserId(): String? {
-        return requirePrefs().getString(USER_ID, null)
-    }
+    fun getAuthToken(): String? = requirePrefs().getString(AUTH_TOKEN, null)
 
-    fun getUserRole(): String? {
-        return requirePrefs().getString(USER_ROLE, null)
-    }
+    fun getUserId(): String? = requirePrefs().getString(USER_ID, null)
 
+    fun getUserRole(): String? = requirePrefs().getString(USER_ROLE, null)
+
+    fun getSelectedStationId(): String? = requirePrefs().getString(SELECTED_STATION_ID, null)
+
+    fun getSelectedStationName(): String? = requirePrefs().getString(SELECTED_STATION_NAME, null)
+
+    /**
+     * Clears user-specific session data but preserves the station selection.
+     */
     fun clearSession() {
         val editor = requirePrefs().edit()
-        editor.clear()
+        editor.remove(AUTH_TOKEN)
+        editor.remove(USER_ID)
+        editor.remove(USER_ROLE)
         editor.apply()
     }
 }

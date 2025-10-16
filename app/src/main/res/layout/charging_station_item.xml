@@ -14,7 +14,7 @@
         android:padding="16dp">
 
         <TextView
-            android:id="@+id/stationNameTextView"
+            android:id="@+id/nameTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Station Name"
@@ -27,16 +27,23 @@
             android:text="Location" />
 
         <TextView
-            android:id="@+id/evTypeTextView"
+            android:id="@+id/typeTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Type" />
+            android:text="Type: AC" />
 
         <TextView
             android:id="@+id/availableSlotsTextView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Available Slots: 0" />
+            android:text="Available Slots: 4" />
+
+        <Button
+            android:id="@+id/bookNowButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Book Now" />
 
     </LinearLayout>
 
