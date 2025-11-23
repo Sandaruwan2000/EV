@@ -1,7 +1,8 @@
 package com.example.ev
 
 /**
- * Represents the top-level response from the /api/allBookings/station/{id} endpoint.
- * This class correctly models the JSON structure by reusing the existing BookingDetails class.
+ * Represents the top-level response from the /api/AllBookings/station/{id} endpoint.
+ * This class correctly models the JSON structure: { "data": [...] }
+ * by reusing the app's existing BookingDetails class.
  */
 data class StationBookingsResponse(val data: List<BookingDetails>)

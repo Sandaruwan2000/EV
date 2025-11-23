@@ -28,6 +28,12 @@ class QrScanFragment : Fragment() {
         val scanButton: Button = view.findViewById(R.id.scanQrButton)
         val confirmButton: Button = view.findViewById(R.id.confirmBookingButton)
 
+        // Retrieve the booking ID from the arguments and pre-fill the EditText
+        val bookingIdFromArgs = arguments?.getString("bookingId")
+        if (!bookingIdFromArgs.isNullOrEmpty()) {
+            bookingIdEditText.setText(bookingIdFromArgs)
+        }
+
         scanButton.setOnClickListener {
             // Use IntentIntegrator for Fragments
             IntentIntegrator.forSupportFragment(this).initiateScan()

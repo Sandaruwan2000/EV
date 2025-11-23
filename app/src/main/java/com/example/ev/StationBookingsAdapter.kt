@@ -9,14 +9,16 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 
-class StationBookingsAdapter(private var bookings: List<BookingDetails>) : 
+class StationBookingsAdapter(
+    private var bookings: List<BookingDetails>,
+    private val onItemClicked: (BookingDetails) -> Unit // Add a click listener lambda
+) : 
     RecyclerView.Adapter<StationBookingsAdapter.BookingViewHolder>() {
 
-    // Define the date format for parsing UTC and formatting to local time
     private val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }
-    private val outputFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
+    private val outputFormat = SimpleDateFormat("MMM d, yyyy, hh:mm a", Locale.getDefault())
 
     fun updateBookings(newBookings: List<BookingDetails>) {
         this.bookings = newBookings
@@ -24,28 +26,32 @@ class StationBookingsAdapter(private var bookings: List<BookingDetails>) :
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookingViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_booking, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_station_booking, parent, false)
         return BookingViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: BookingViewHolder, position: Int) {
-        holder.bind(bookings[position])
+        val booking = bookings[position]
+        holder.bind(booking)
+        // Set the click listener on the item view
+        holder.itemView.setOnClickListener { onItemClicked(booking) }
     }
 
     override fun getItemCount() = bookings.size
 
     inner class BookingViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val idTextView: TextView = itemView.findViewById(R.id.bookingIdTextView)
+        private val statusTextView: TextView = itemView.findViewById(R.id.statusTextView)
+        private val vehicleNumberTextView: TextView = itemView.findViewById(R.id.vehicleNumberTextView)
         private val timeTextView: TextView = itemView.findViewById(R.id.bookingTimeTextView)
-        private val statusTextView: TextView = itemView.findViewById(R.id.bookingStatusTextView)
 
         fun bind(booking: BookingDetails) {
             idTextView.text = "Booking ID: ${booking.id}"
             statusTextView.text = "Status: ${booking.status}"
+            vehicleNumberTextView.text = "Vehicle: ${booking.vehicleNumber}"
 
-            // Use the correct time field from BookingDetails and format it
-            val timeStr = booking.startTime ?: booking.startTime
-            if (timeStr != null && !timeStr.startsWith("0001")) { // Ignore default/invalid dates
+            val timeStr = booking.startTime ?: booking.reservationDateTime
+            if (timeStr != null && !timeStr.startsWith("0001")) {
                 try {
                     val date = inputFormat.parse(timeStr)
                     timeTextView.text = if (date != null) outputFormat.format(date) else "Invalid Time"
